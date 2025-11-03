@@ -622,3 +622,89 @@ export_shap_values <- function(shap_result) {
   
   return(shap_long)
 }
+
+' Calculate feature importance ranks
+#'
+#' @param shap_result Result from calculate_plp_shap()
+#' @return A data frame with feature rankings
+#'
+#' @details
+#' For each patient, features are ranked by absolute SHAP value (1 = most important).
+#' The function returns:
+#' - mean_rank: Average rank across all patients (lower = more consistently important)
+#' - median_rank: Median rank across all patients
+#' - mean_abs_shap: Average absolute SHAP value (overall importance magnitude)
+#' - times_top_5: How many patients had this feature in their top 5
+#' - times_top_10: How many patients had this feature in their top 10
+#'
+get_feature_ranks <- function(shap_result) {
+  
+  shap_values <- shap_result$shap_values
+  n_patients <- nrow(shap_values)
+  
+  # Calculate absolute SHAP values
+  abs_shap <- abs(shap_values)
+  
+  # For each patient (row), rank features by absolute SHAP value
+  # Rank 1 = highest absolute SHAP (most important)
+  ranks <- t(apply(abs_shap, 1, function(row) {
+    rank(-row, ties.method = "average")
+  }))
+  
+  # Calculate statistics for each feature
+  feature_stats <- data.frame(
+    feature = colnames(shap_values),
+    mean_rank = colMeans(ranks),
+    median_rank = apply(ranks, 2, median),
+    sd_rank = apply(ranks, 2, sd),
+    min_rank = apply(ranks, 2, min),
+    max_rank = apply(ranks, 2, max),
+    mean_abs_shap = colMeans(abs_shap),
+    median_abs_shap = apply(abs_shap, 2, median),
+    times_top_5 = colSums(ranks <= 5),
+    times_top_10 = colSums(ranks <= 10),
+    pct_top_5 = 100 * colSums(ranks <= 5) / n_patients,
+    pct_top_10 = 100 * colSums(ranks <= 10) / n_patients
+  )
+  
+  # Sort by mean rank (most consistently important first)
+  feature_stats <- feature_stats[order(feature_stats$mean_rank), ]
+  rownames(feature_stats) <- NULL
+  
+  return(feature_stats)
+}
+
+
+#' Print feature rank summary
+#'
+#' @param shap_result Result from calculate_plp_shap()
+#' @param top_n Number of top features to display (default: 20)
+#'
+print_feature_ranks <- function(shap_result, top_n = 20) {
+  
+  ranks <- get_feature_ranks(shap_result)
+  ranks_display <- head(ranks, top_n)
+  
+  cat("Feature Importance Rankings\n")
+  cat("============================\n\n")
+  cat("Based on", nrow(shap_result$shap_values), "patients\n")
+  cat("Lower mean rank = more consistently important across patients\n\n")
+  
+  # Format for display
+  ranks_display$mean_rank <- round(ranks_display$mean_rank, 2)
+  ranks_display$mean_abs_shap <- round(ranks_display$mean_abs_shap, 4)
+  
+  print(ranks_display[, c("feature", "mean_rank", "median_rank", "mean_abs_shap", 
+                          "times_top_5", "pct_top_5")], 
+        row.names = FALSE)
+  
+  cat("\n")
+  cat("Columns:\n")
+  cat("  mean_rank: Average rank across patients (1 = most important)\n")
+  cat("  median_rank: Median rank across patients\n")
+  cat("  mean_abs_shap: Average absolute SHAP value\n")
+  cat("  times_top_5: Number of patients where feature was in top 5\n")
+  cat("  pct_top_5: Percentage of patients where feature was in top 5\n")
+  
+  invisible(ranks)
+}

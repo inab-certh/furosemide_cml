@@ -82,7 +82,7 @@ cdm$outcomes <- CohortConstructor::measurementCohort(
   name = "outcomes",
   conceptSet = list("creatinine" = c(3016723)),
   valueAsNumber = list(
-    "creatinine_increased" = list("8840" = c(1.3, Inf))
+    "creatinine_increased" = list("8840" = c(1.2, Inf))
   ),
   subsetCohort = "cohorts"
 )

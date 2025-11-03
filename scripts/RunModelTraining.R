@@ -48,8 +48,8 @@ populationSettings <- createStudyPopulationSettings(
   removeSubjectsWithPriorOutcome = FALSE,
   priorOutcomeLookback = 9999,
   requireTimeAtRisk = FALSE, 
-  riskWindowStart = 1, 
-  riskWindowEnd = 30
+  riskWindowStart = 60, 
+  riskWindowEnd = 180
 )
 
 # use age/gender in groups and condition groups as features
@@ -69,17 +69,21 @@ covariateSettings <- FeatureExtraction::createCovariateSettings(
   addDescendantsToInclude = TRUE
 )
 
+ridgeRegressionSettings <- setLassoLogisticRegression()
+ridgeRegressionSettings$param$priorParams$priorType <- "normal"
+
+
 modelDesign1 <- createModelDesign(
-  targetId = 1, 
-  outcomeId = 1, 
-  restrictPlpDataSettings = restrictPlpDataSettings, 
-  populationSettings = populationSettings, 
-  covariateSettings = covariateSettings, 
+  targetId = 1,
+  outcomeId = 1,
+  restrictPlpDataSettings = restrictPlpDataSettings,
+  populationSettings = populationSettings,
+  covariateSettings = covariateSettings,
   featureEngineeringSettings = createFeatureEngineeringSettings(),
-  sampleSettings = createSampleSettings(), 
-  splitSettings = createDefaultSplitSetting(), 
-  preprocessSettings = createPreprocessSettings(), 
-  modelSettings = setLassoLogisticRegression()
+  sampleSettings = createSampleSettings(),
+  splitSettings = createDefaultSplitSetting(),
+  preprocessSettings = createPreprocessSettings(),
+  modelSettings = ridgeRegressionSettings
 )
 
 modelDesign2 <- createModelDesign(
@@ -120,5 +124,5 @@ results <- runMultiplePlp(
   ),
   onlyFetchData = FALSE,
   logSettings = createLogSettings(),
-  saveDirectory = "./PlpMultiOutput"
+  saveDirectory = "results/models"
 )

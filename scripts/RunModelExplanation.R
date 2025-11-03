@@ -46,7 +46,19 @@ for (i in seq_along(modelDirs)) {
     )
   )
 
-  message("Saved the results")
+  message("Saved the shap values calculations.")
+
+  ranks <- get_feature_ranks(shap_result)
+  message("==== SHAP value ranks ====")
+  ranks |> dplyr::filter(times_top_10 > 10)
+  readr::write_csv(
+    ranks,
+    file.path(
+      evaluationDir,
+      glue::glue("shap_ranks_{ analysisName }.csv")
+    )
+  )
+  message("Saved the shap values ranks.")
 
   plot_plp_shap(
     shap_result,
