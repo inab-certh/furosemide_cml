@@ -381,18 +381,21 @@ summary.plpShap <- function(object, ...) {
 #' @param observation Which observation to plot for waterfall (default: 1)
 #' @param max_features Maximum number of features to display (default: 20)
 #' @param save_path File path to save the plot
+#' @param title The plot's title
 #' @param width Plot width in inches (default: 10)
 #' @param height Plot height in inches (default: 8)
 #' @param dpi Resolution in dots per inch (default: 300)
 #'
-plot_plp_shap <- function(shap_result, 
+#'
+plot_plp_shap <- function(shap_result,
                           plot_type = "importance",
                           observation = 1,
                           max_features = 20,
                           save_path,
+                          title = NULL,
                           width = 10,
                           height = 8,
-                          dpi = 300) {
+                          dpi = 600) {
   
   if (missing(save_path) || is.null(save_path)) {
     stop("save_path is required. Please provide a file path to save the plot.")
@@ -409,6 +412,11 @@ plot_plp_shap <- function(shap_result,
     importance_df <- importance_df[order(-importance_df$importance), ]
     importance_df <- head(importance_df, max_features)
     
+    # Set default title if not provided
+    if (is.null(title)) {
+      title <- "Feature Importance (Mean |SHAP|)"
+    }
+    
     p <- ggplot2::ggplot(
       importance_df,
       ggplot2::aes(x = reorder(feature, importance), y = importance)
@@ -416,7 +424,7 @@ plot_plp_shap <- function(shap_result,
       ggplot2::geom_col(fill = "steelblue") +
       ggplot2::coord_flip() +
       ggplot2::labs(
-        title = "Feature Importance (Mean |SHAP|)",
+        title = title,
         x = "Feature",
         y = "Mean Absolute SHAP Value"
       ) +
@@ -440,6 +448,11 @@ plot_plp_shap <- function(shap_result,
     obs_df <- head(obs_df, 15)
     obs_df$feature <- factor(obs_df$feature, levels = rev(obs_df$feature))
     
+    # Set default title if not provided
+    if (is.null(title)) {
+      title <- paste("SHAP Values for Observation", observation)
+    }
+    
     p <- ggplot2::ggplot(
       obs_df,
       ggplot2::aes(x = feature, y = shap_value, fill = shap_value > 0)
@@ -451,7 +464,7 @@ plot_plp_shap <- function(shap_result,
         labels = c("Increases risk", "Decreases risk")
       ) +
       ggplot2::labs(
-        title = paste("SHAP Values for Observation", observation),
+        title = title,
         subtitle = paste("Prediction:", round(shap_result$predictions[observation], 4)),
         x = "Feature",
         y = "SHAP Value",
@@ -459,7 +472,8 @@ plot_plp_shap <- function(shap_result,
       ) +
       ggplot2::theme_minimal() +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold")
+        plot.title = ggplot2::element_text(size = 16, face = "bold"),
+        axis.text = ggplot2::element_text(size = 14)
       )
     
   } else if (plot_type == "beeswarm") {
@@ -545,6 +559,11 @@ plot_plp_shap <- function(shap_result,
       ) |>
       dplyr::ungroup()
     
+    # Set default title if not provided
+    if (is.null(title)) {
+      title <- "SHAP Summary Plot"
+    }
+    
     # Create the plot colored by normalized feature value
     p <- ggplot2::ggplot(
       shap_long,
@@ -557,21 +576,24 @@ plot_plp_shap <- function(shap_result,
         size = 1.5
       ) +
       ggplot2::scale_color_gradient(
-        low = "#FDE725",   # Yellow for low values (within feature)
-        high = "#440154",  # Purple for high values (within feature)
+        low = "#FDE725", # Yellow for low values (within feature)
+        high = "#440154", # Purple for high values (within feature)
         name = "Feature\nValue",
         labels = c("Low", "High"),
         breaks = c(0, 1)
       ) +
       ggplot2::labs(
-        title = "SHAP Summary Plot",
+        title = title,
         x = "SHAP Value (impact on model output)",
         y = "Feature"
       ) +
       ggplot2::theme_minimal() +
       ggplot2::theme(
-        plot.title = ggplot2::element_text(size = 14, face = "bold"),
-        plot.subtitle = ggplot2::element_text(size = 10)
+        plot.title = ggplot2::element_text(size = 26, face = "bold"),
+        plot.subtitle = ggplot2::element_text(size = 10),
+        axis.text = ggplot2::element_text(size = 24),
+        axis.title.y = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(size = 24)
       )
     
   } else {
